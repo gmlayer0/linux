@@ -1249,9 +1249,11 @@ int begin_new_exec(struct linux_binprm * bprm)
 	int retval;
 
 	/* Once we are committed compute the creds */
-	retval = bprm_creds_from_file(bprm);
-	if (retval)
-		return retval;
+	if (!is_ukl_thread()) {
+		retval = bprm_creds_from_file(bprm);
+		if (retval)
+			return retval;
+	}
 
 	/*
 	 * Ensure all future errors are fatal.
@@ -1285,9 +1287,11 @@ int begin_new_exec(struct linux_binprm * bprm)
 		goto out;
 
 	/* If the binary is not readable then enforce mm->dumpable=0 */
-	would_dump(bprm, bprm->file);
-	if (bprm->have_execfd)
-		would_dump(bprm, bprm->executable);
+	if (!is_ukl_thread()) {
+		would_dump(bprm, bprm->file);
+		if (bprm->have_execfd)
+			would_dump(bprm, bprm->executable);
+	}
 
 	/*
 	 * Release all of the old mmap stuff
@@ -1519,6 +1523,11 @@ static struct linux_binprm *alloc_bprm(int fd, struct filename *filename)
 	if (!bprm)
 		goto out;
 
+	if (is_ukl_thread()) {
+		bprm->filename = "UKL";
+		goto out_ukl;
+	}
+
 	if (fd == AT_FDCWD || filename->name[0] == '/') {
 		bprm->filename = filename->name;
 	} else {
@@ -1532,6 +1541,8 @@ static struct linux_binprm *alloc_bprm(int fd, struct filename *filename)
 
 		bprm->filename = bprm->fdpath;
 	}
+
+out_ukl:
 	bprm->interp = bprm->filename;
 
 	retval = bprm_mm_init(bprm);
@@ -1723,6 +1734,15 @@ static int search_binary_handler(struct linux_binprm *bprm)
 	struct linux_binfmt *fmt;
 	int retval;
 
+	if (is_ukl_thread()) {
+		list_for_each_entry(fmt, &formats, lh) {
+			retval = fmt->load_binary(bprm);
+			if (retval == 0)
+				return retval;
+		}
+		goto out_ukl;
+	}
+
 	retval = prepare_binprm(bprm);
 	if (retval < 0)
 		return retval;
@@ -1732,7 +1752,7 @@ static int search_binary_handler(struct linux_binprm *bprm)
 		return retval;
 
 	retval = -ENOENT;
- retry:
+retry:
 	read_lock(&binfmt_lock);
 	list_for_each_entry(fmt, &formats, lh) {
 		if (!try_module_get(fmt->module))
@@ -1760,6 +1780,7 @@ static int search_binary_handler(struct linux_binprm *bprm)
 		goto retry;
 	}
 
+out_ukl:
 	return retval;
 }
 
@@ -1815,7 +1836,7 @@ static int exec_binprm(struct linux_binprm *bprm)
 static int bprm_execve(struct linux_binprm *bprm,
 		       int fd, struct filename *filename, int flags)
 {
-	struct file *file;
+	struct file *file = NULL;
 	int retval;
 
 	retval = prepare_bprm_creds(bprm);
@@ -1831,10 +1852,12 @@ static int bprm_execve(struct linux_binprm *bprm,
 	current->in_execve = 1;
 	sched_mm_cid_before_execve(current);
 
-	file = do_open_execat(fd, filename, flags);
-	retval = PTR_ERR(file);
-	if (IS_ERR(file))
-		goto out_unmark;
+	if (!is_ukl_thread()) {
+		file = do_open_execat(fd, filename, flags);
+		retval = PTR_ERR(file);
+		if (IS_ERR(file))
+			goto out_unmark;
+	}
 
 	sched_exec();
 
@@ -1852,9 +1875,11 @@ static int bprm_execve(struct linux_binprm *bprm,
 		bprm->interp_flags |= BINPRM_FLAGS_PATH_INACCESSIBLE;
 
 	/* Set the unchanging part of bprm->cred */
-	retval = security_bprm_creds_for_exec(bprm);
-	if (retval)
-		goto out;
+	if (!is_ukl_thread()) {
+		retval = security_bprm_creds_for_exec(bprm);
+		if (retval)
+			goto out;
+	}
 
 	retval = exec_binprm(bprm);
 	if (retval < 0)
