@@ -626,6 +626,8 @@ static void handle_symbol(struct module *mod, struct elf_info *info,
 	case SHN_COMMON:
 		if (strstarts(symname, "__gnu_lto_")) {
 			/* Should warn here, but modpost runs before the linker */
+		} else if (strstarts(symname, "ukl_")) {
+			/* User code can have common symbols */
 		} else
 			warn("\"%s\" [%s] is COMMON symbol\n", symname, mod->name);
 		break;
@@ -763,6 +765,8 @@ static const char *const section_white_list[] =
 	".gnu.lto*",
 	".discard.*",
 	".llvm.call-graph-profile",	/* call graph */
+	".gnu.warning.*",
+	".gnu.glibc-stub.*",
 	NULL
 };
 
