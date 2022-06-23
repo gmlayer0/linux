@@ -22,6 +22,38 @@
 # include <asm/uaccess_64.h>
 #endif
 
+/**
+ * access_ok - Checks if a user space pointer is valid
+ * @addr: User space pointer to start of block to check
+ * @size: Size of block to check
+ *
+ * Context: User context only. This function may sleep if pagefaults are
+ *          enabled.
+ *
+ * Checks if a pointer to a block of memory in user space is valid.
+ *
+ * Note that, depending on architecture, this function probably just
+ * checks that the pointer is in the user space range - after calling
+ * this function, memory access functions may still return -EFAULT.
+ *
+ * Return: true (nonzero) if the memory block may be valid, false (zero)
+ * if it is definitely invalid.
+ */
+#ifdef CONFIG_UNIKERNEL_LINUX
+#define access_ok(addr, size)						\
+({									\
+	WARN_ON_IN_IRQ();						\
+	(is_ukl_thread() ? 1 :						\
+	 likely(__access_ok(addr, size)));				\
+})
+#else
+#define access_ok(addr, size)						\
+({									\
+	WARN_ON_IN_IRQ();						\
+	likely(__access_ok(addr, size));				\
+})
+#endif
+
 #include <asm-generic/access_ok.h>
 
 extern int __get_user_1(void);
