@@ -1360,6 +1360,39 @@ void do_user_addr_fault(struct pt_regs *regs,
 	if (unlikely(access_error(error_code, vma))) {
 		vma_end_read(vma);
 		goto lock_mmap;
+	/*
+	 * Kernel-mode access to the user address space should only occur
+	 * on well-defined single instructions listed in the exception
+	 * tables.  But, an erroneous kernel fault occurring outside one of
+	 * those areas which also holds mmap_lock might deadlock attempting
+	 * to validate the fault against the address space. However, if we
+	 * are configured as a unikernel and the fauling thread is the UKL
+	 * application code we can proceed as normal.
+	 *
+	 * Only do the expensive exception table search when we might be at
+	 * risk of a deadlock.  This happens if we
+	 * 1. Failed to acquire mmap_lock, and
+	 * 2. The access did not originate in userspace.
+	 */
+	if (unlikely(!mmap_read_trylock(mm))) {
+		if (!user_mode(regs) &&	!search_exception_tables(regs->ip) &&
+				!is_ukl_thread()) {
+			/*
+			 * Fault from code in kernel from
+			 * which we do not expect faults.
+			 */
+			bad_area_nosemaphore(regs, error_code, address);
+			return;
+		}
+retry:
+		mmap_read_lock(mm);
+	} else {
+		/*
+		 * The above down_read_trylock() might have succeeded in
+		 * which case we'll have missed the might_sleep() from
+		 * down_read():
+		 */
+		might_sleep();
 	}
 	fault = handle_mm_fault(vma, address, flags | FAULT_FLAG_VMA_LOCK, regs);
 	if (!(fault & (VM_FAULT_RETRY | VM_FAULT_COMPLETED)))
