@@ -64,16 +64,28 @@ asmlinkage long __riscv_sys_ni_syscall(const struct pt_regs *);
 		__PROTECT(x, ret,__MAP(x,__SC_ARGS,__VA_ARGS__));		\
 		return ret;							\
 	}									\
+	asmlinkage long __riscv_ukl_sys##name(long p0, long p1, long p2, long p3, long p4, long p5, long p6) { \
+		    return __se_sys##name(__MAP(x,__SC_ARGS	      \
+	      ,,p0,,p1,,p2		  \
+	      ,,p3,,p4,,p5,,p6)); \
+	}		\
 	static inline long __do_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))
 
 #define SYSCALL_DEFINE0(sname)							\
 	SYSCALL_METADATA(_##sname, 0);						\
 	asmlinkage long __riscv_sys_##sname(const struct pt_regs *__unused);	\
 	ALLOW_ERROR_INJECTION(__riscv_sys_##sname, ERRNO);			\
+	asmlinkage long __riscv_ukl_sys_##sname(long p0, long p1, long p2, long p3, long p4, long p5, long p6) { \
+		    return __riscv_sys_##sname(NULL); \
+	} \
 	asmlinkage long __riscv_sys_##sname(const struct pt_regs *__unused)
 
 #define COND_SYSCALL(name)							\
 	asmlinkage long __weak __riscv_sys_##name(const struct pt_regs *regs);	\
+	asmlinkage long __weak __riscv_ukl_sys_##name(void);	\
+	asmlinkage long __weak __riscv_ukl_sys_##name(void) { \
+		return sys_ni_syscall(); \
+	} \
 	asmlinkage long __weak __riscv_sys_##name(const struct pt_regs *regs)	\
 	{									\
 		return sys_ni_syscall();					\

@@ -1917,7 +1917,7 @@ out_unmark:
 static void check_ukl_exec(const char *name)
 {
 	if (!strcmp(name, CONFIG_UKL_NAME)) {
-		pr_debug("In PID %d and current->ukl_thread is %d\nGoing to create UKL here.\n",
+		printk("In PID %d and current->ukl_thread is %d\nGoing to create UKL here.\n",
 				current->pid, is_ukl_thread());
 		enter_ukl_kernel();
 	}

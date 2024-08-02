@@ -1,6 +1,6 @@
 menuconfig UNIKERNEL_LINUX
 	bool "Unikernel Linux"
-	depends on X86_64 && !RANDOMIZE_BASE && !PAGE_TABLE_ISOLATION
+	depends on (X86_64 || RISCV) && !RANDOMIZE_BASE && !PAGE_TABLE_ISOLATION
 	help
 	    Unikernel Linux allows for a single, privileged process to be
 	    linked with the kernel binary and be executed inplace of or

@@ -110,11 +110,14 @@ static int __init compat_mode_detect(void)
 }
 early_initcall(compat_mode_detect);
 #endif
-
+extern long ukl_syscall(long sysnum, ...);
 void start_thread(struct pt_regs *regs, unsigned long pc,
 	unsigned long sp)
 {
 	regs->status = SR_PIE;
+	if(is_ukl_thread()) regs->status |= SR_PP;
+	if(is_ukl_thread()) ukl_syscall(64,1,"Hello from syscall.\n",15);
+	if(is_ukl_thread()) printk("status is %x\n", regs->status);
 	if (has_fpu()) {
 		regs->status |= SR_FS_INITIAL;
 		/*
@@ -207,3 +210,38 @@ int copy_thread(struct task_struct *p, const struct kernel_clone_args *args)
 	p->thread.sp = (unsigned long)childregs; /* kernel sp */
 	return 0;
 }
+
+#ifdef CONFIG_UNIKERNEL_LINUX
+/*
+ * 0 = Non UKL thread
+ * 1 = UKL thread - in kernel code
+ * 2 = UKL thread - in application code
+ */
+int is_ukl_thread(void)
+{
+	return current->ukl_thread;
+}
+
+void enter_ukl_user(void)
+{
+	current->ukl_thread = UKL_APPLICATION;
+}
+
+void enter_ukl_kernel(void)
+{
+	current->ukl_thread = UKL_KERNEL;
+}
+
+extern void* ukl_sys_call_table[];
+typedef long (*syscall_ukl_t)(long p0, long p1, long p2, long p3, long p4, long p5, long p6);
+long ukl__syscall(long syscall, long p0, long p1, long p2, long p3, long p4, long p5, long p6)
+{
+	enter_ukl_kernel();
+	syscall_ukl_t fn;
+	printk("syscall%d: %x %x %x %x %x %x %x", syscall, p0, p1, p2, p3, p4, p5, p6);
+	fn = ukl_sys_call_table[syscall];
+	long ret = fn(p0,p1,p2,p3,p4,p5,p6);
+	enter_ukl_user();
+	return ret;
+}
+#endif

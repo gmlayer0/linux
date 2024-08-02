@@ -341,3 +341,8 @@ asmlinkage long __riscv_sys_ni_syscall(const struct pt_regs *__unused)
 {
 	return -ENOSYS;
 }
+
+asmlinkage long __riscv_ukl_sys_ni_syscall(void)
+{
+	return -ENOSYS;
+}
