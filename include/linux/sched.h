@@ -1569,13 +1569,13 @@ struct task_struct {
  * 2 = UKL thread - in application code
  */
 #define NON_UKL_THREAD 0
-#define UKL_KERNEL 1
-#define UKL_APPLICATION 2
+#define UKL_APPLICATION 1
+#define UKL_KERNEL 2
 
 #ifdef CONFIG_UNIKERNEL_LINUX
-int is_ukl_thread(void);
-void enter_ukl_user(void);
-void enter_ukl_kernel(void);
+extern int is_ukl_thread(void);
+extern void enter_ukl_user(void);
+extern void enter_ukl_kernel(void);
 static inline unsigned int is_ukl_bypass(void) { return current->ukl_bypass_syscall; }
 #else
 static inline int is_ukl_thread(void) { return NON_UKL_THREAD; }

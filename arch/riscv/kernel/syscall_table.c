@@ -33,5 +33,6 @@ void * const ukl_sys_call_table[__NR_syscalls] = {
 	[0 ... __NR_syscalls - 1] = __riscv_ukl_sys_ni_syscall,
 #include <asm/unistd.h>
 };
+EXPORT_SYMBOL(ukl_sys_call_table);
 
 #endif

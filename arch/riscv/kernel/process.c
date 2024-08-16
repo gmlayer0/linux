@@ -114,9 +114,10 @@ extern long ukl_syscall(long sysnum, ...);
 void start_thread(struct pt_regs *regs, unsigned long pc,
 	unsigned long sp)
 {
+	printk("Start_thread @%llx, sp:%llx", pc, sp);
 	regs->status = SR_PIE;
 	if(is_ukl_thread()) regs->status |= SR_PP;
-	if(is_ukl_thread()) ukl_syscall(64,1,"Hello from syscall.\n",15);
+	// if(is_ukl_thread()) ukl_syscall(64,1,"Hello from syscall.\n",15);
 	if(is_ukl_thread()) printk("status is %x\n", regs->status);
 	if (has_fpu()) {
 		regs->status |= SR_FS_INITIAL;
@@ -221,15 +222,30 @@ int is_ukl_thread(void)
 {
 	return current->ukl_thread;
 }
+EXPORT_SYMBOL(is_ukl_thread);
 
+// Not used
 void enter_ukl_user(void)
 {
 	current->ukl_thread = UKL_APPLICATION;
 }
+EXPORT_SYMBOL(enter_ukl_user);
 
 void enter_ukl_kernel(void)
 {
 	current->ukl_thread = UKL_KERNEL;
+}
+EXPORT_SYMBOL(enter_ukl_kernel);
+
+asmlinkage void push_ukl_level(void)
+{
+	if(is_ukl_thread()) current->ukl_thread++;
+}
+
+asmlinkage int pop_ukl_level(void)
+{
+	if(is_ukl_thread()) current->ukl_thread--;
+	return current->ukl_thread == UKL_APPLICATION;
 }
 
 extern void* ukl_sys_call_table[];
@@ -241,7 +257,8 @@ long ukl__syscall(long syscall, long p0, long p1, long p2, long p3, long p4, lon
 	printk("syscall%d: %x %x %x %x %x %x %x", syscall, p0, p1, p2, p3, p4, p5, p6);
 	fn = ukl_sys_call_table[syscall];
 	long ret = fn(p0,p1,p2,p3,p4,p5,p6);
-	enter_ukl_user();
+	pop_ukl_level();
 	return ret;
 }
+EXPORT_SYMBOL(ukl__syscall);
 #endif

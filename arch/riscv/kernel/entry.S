@@ -81,6 +81,10 @@ _save_context:
 .option norelax
 	la gp, __global_pointer$
 .option pop
+
+	/* Push UKL level */
+	call push_ukl_level
+
 	move a0, sp /* pt_regs */
 	la ra, ret_from_exception
 
@@ -114,6 +118,10 @@ SYM_CODE_END(handle_exception)
  */
 SYM_CODE_START_NOALIGN(ret_from_exception)
 	REG_L s0, PT_STATUS(sp)
+	/* If current application is in UKL user mode, */
+	/* sp/tp is need to be saved. */
+	call pop_ukl_level
+	bnez a0, 2f
 #ifdef CONFIG_RISCV_M_MODE
 	/* the MPP value is too large to be used as an immediate arg for addi */
 	li t0, SR_MPP
@@ -123,6 +131,7 @@ SYM_CODE_START_NOALIGN(ret_from_exception)
 #endif
 	bnez s0, 1f
 
+2:
 	/* Save unwound kernel stack pointer in thread_info */
 	addi s0, sp, PT_SIZE_ON_STACK
 	REG_S s0, TASK_TI_KERNEL_SP(tp)
