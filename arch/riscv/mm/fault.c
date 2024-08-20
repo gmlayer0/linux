@@ -66,7 +66,7 @@ static inline void mm_fault_error(struct pt_regs *regs, unsigned long addr, vm_f
 		 * We ran out of memory, call the OOM killer, and return the userspace
 		 * (which will retry the fault, or kill us if we got oom-killed).
 		 */
-		if (!user_mode(regs)) {
+		if (!user_mode(regs) && !(is_ukl_thread() == (UKL_APPLICATION + 1))) {
 			no_context(regs, addr);
 			return;
 		}
@@ -219,6 +219,7 @@ static inline bool access_error(unsigned long cause, struct vm_area_struct *vma)
  * This routine handles page faults.  It determines the address and the
  * problem, and then passes it off to one of the appropriate routines.
  */
+extern int is_ukl_thread(void);
 void handle_page_fault(struct pt_regs *regs)
 {
 	struct task_struct *tsk;
@@ -234,6 +235,7 @@ void handle_page_fault(struct pt_regs *regs)
 
 	tsk = current;
 	mm = tsk->mm;
+	// printk("pgd is %lx\n", mm->pgd);
 
 	if (kprobe_page_fault(regs, cause))
 		return;
@@ -267,7 +269,7 @@ void handle_page_fault(struct pt_regs *regs)
 		return;
 	}
 
-	if (user_mode(regs))
+	if (user_mode(regs) || (is_ukl_thread() == (UKL_APPLICATION + 1)))
 		flags |= FAULT_FLAG_USER;
 
 	if (!user_mode(regs) && addr < TASK_SIZE && unlikely(!(regs->status & SR_SUM))) {
@@ -306,7 +308,7 @@ void handle_page_fault(struct pt_regs *regs)
 	count_vm_vma_lock_event(VMA_LOCK_RETRY);
 
 	if (fault_signal_pending(fault, regs)) {
-		if (!user_mode(regs))
+		if (!user_mode(regs) && !(is_ukl_thread() == (UKL_APPLICATION + 1)))
 			no_context(regs, addr);
 		return;
 	}
@@ -345,7 +347,7 @@ retry:
 	 * would already be released in __lock_page_or_retry in mm/filemap.c.
 	 */
 	if (fault_signal_pending(fault, regs)) {
-		if (!user_mode(regs))
+		if (!user_mode(regs) && !(is_ukl_thread() == (UKL_APPLICATION + 1)))
 			no_context(regs, addr);
 		return;
 	}

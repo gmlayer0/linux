@@ -7,9 +7,9 @@ UKL.a: tcp_server.o syscall.o userspace
 	riscv64-linux-gnu-objcopy --prefix-symbols=ukl_ UKL.a
 
 tcp_server.o: tcp_server.c
-	riscv64-linux-gnu-gcc -O2 -mabi=lp64 -fno-stack-protector -march=rv64imac tcp_server.c -c
+	riscv64-linux-gnu-gcc -Og -g -mabi=lp64 -fno-stack-protector -march=rv64imac tcp_server.c -c
 syscall.o: syscall.S
-	riscv64-linux-gnu-gcc -O2 -mabi=lp64 -fno-stack-protector syscall.S -c
+	riscv64-linux-gnu-gcc -Og -g -mabi=lp64 -fno-stack-protector syscall.S -c
 
 userspace:
 	riscv64-linux-gnu-gcc -o tcp_server tcp_server.c

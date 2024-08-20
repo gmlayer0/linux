@@ -27,12 +27,6 @@
 // loop:
 // 	jmp loop
 
-.text
-.global syscall
-syscall:
-	call _syscall
-	ret
-
 .global _start
 _start:
 	call main

@@ -18,7 +18,7 @@ extern long syscall(long number, ...);
 int main(void)
 {
 	// some variables we need
-	msg("im in\n");
+	while(1) msg("im in\n");
 	struct sockaddr_in server_addr, client_addr;
 	socklen_t client_len = sizeof(client_addr);
 	int bytes_received;

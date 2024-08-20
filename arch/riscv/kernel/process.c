@@ -110,15 +110,14 @@ static int __init compat_mode_detect(void)
 }
 early_initcall(compat_mode_detect);
 #endif
-extern long ukl_syscall(long sysnum, ...);
 void start_thread(struct pt_regs *regs, unsigned long pc,
 	unsigned long sp)
 {
-	printk("Start_thread @%llx, sp:%llx", pc, sp);
+	printk("Start_thread @%lx, sp:%lx", pc, sp);
 	regs->status = SR_PIE;
-	if(is_ukl_thread()) regs->status |= SR_PP;
+	if(is_ukl_thread()) regs->status |= SR_PP | SR_SUM; // Keep UKL thread in Kernel mode and enable access to user address space.
 	// if(is_ukl_thread()) ukl_syscall(64,1,"Hello from syscall.\n",15);
-	if(is_ukl_thread()) printk("status is %x\n", regs->status);
+	if(is_ukl_thread()) printk("status is %lx\n", regs->status);
 	if (has_fpu()) {
 		regs->status |= SR_FS_INITIAL;
 		/*
@@ -250,15 +249,40 @@ asmlinkage int pop_ukl_level(void)
 
 extern void* ukl_sys_call_table[];
 typedef long (*syscall_ukl_t)(long p0, long p1, long p2, long p3, long p4, long p5, long p6);
-long ukl__syscall(long syscall, long p0, long p1, long p2, long p3, long p4, long p5, long p6)
+long ukl_syscall(long syscall, long p0, long p1, long p2, long p3, long p4, long p5, long p6)
 {
-	enter_ukl_kernel();
+	register void *tp __asm__("tp");
+	register void *gp __asm__("gp");
+	unsigned long flags;
+	local_irq_save(flags);
+	long old_tp = (long)tp;
+	long old_gp = (long)gp;
+	{
+		tp = (void*) csr_read(CSR_SCRATCH);
+		__asm__ __volatile__ (
+			".option push\n.option norelax\n"
+			"la gp, __global_pointer$\n"
+			".option pop\n"
+			);
+		// csr_set(CSR_SCRATCH, 0);
+		// enter_ukl_kernel();
+	}
+	local_irq_restore(flags);
+	printk("Old is %lx, Current is %lx\n", old_tp, (long)tp);
+	printk("syscall%ld: %lx %lx %lx %lx %lx %lx %lx", syscall, p0, p1, p2, p3, p4, p5, p6);
 	syscall_ukl_t fn;
-	printk("syscall%d: %x %x %x %x %x %x %x", syscall, p0, p1, p2, p3, p4, p5, p6);
 	fn = ukl_sys_call_table[syscall];
 	long ret = fn(p0,p1,p2,p3,p4,p5,p6);
-	pop_ukl_level();
+	printk("syscall%ld ret: %ld", syscall, ret);
+	local_irq_save(flags);
+	{
+		csr_set(CSR_SCRATCH, tp);
+		tp = (void*) old_tp;
+		gp = (void*) old_gp;
+		// pop_ukl_level();
+	}
+	local_irq_restore(flags);
 	return ret;
 }
-EXPORT_SYMBOL(ukl__syscall);
+EXPORT_SYMBOL(ukl_syscall);
 #endif

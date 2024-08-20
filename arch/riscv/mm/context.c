@@ -196,6 +196,7 @@ switch_mm_fast:
 
 	if (need_flush_tlb)
 		local_flush_tlb_all();
+	// printk("switch to pgd %lx\n", mm->pgd);
 }
 
 static void set_mm_noasid(struct mm_struct *mm)
