@@ -269,7 +269,7 @@ void handle_page_fault(struct pt_regs *regs)
 		return;
 	}
 
-	if (user_mode(regs) || (is_ukl_thread() == (UKL_APPLICATION + 1)))
+	if (user_mode(regs) || (is_ukl_thread() == UKL_APPLICATION))
 		flags |= FAULT_FLAG_USER;
 
 	if (!user_mode(regs) && addr < TASK_SIZE && unlikely(!(regs->status & SR_SUM))) {

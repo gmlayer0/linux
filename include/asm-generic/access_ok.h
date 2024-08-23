@@ -36,6 +36,10 @@ static inline int __access_ok(const void __user *ptr, unsigned long size)
 	if (IS_ENABLED(CONFIG_ALTERNATE_USER_ADDRESS_SPACE) ||
 	    !IS_ENABLED(CONFIG_MMU))
 		return true;
+	
+#ifdef CONFIG_UNIKERNEL_LINUX
+	if (is_ukl_thread()) return true;
+#endif
 
 	return (size <= limit) && (addr <= (limit - size));
 }

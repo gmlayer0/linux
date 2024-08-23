@@ -25,8 +25,14 @@
 
 #define __enable_user_access()							\
 	__asm__ __volatile__ ("csrs sstatus, %0" : : "r" (SR_SUM) : "memory")
+// #define __disable_user_access()							\
+// 	do {                                                \
+// 		if (!is_ukl_thread())                           \
+// 		__asm__ __volatile__ ("csrc sstatus, %0" : : "r" (SR_SUM) : "memory"); \
+// 	} while (0)
 #define __disable_user_access()							\
-	__asm__ __volatile__ ("csrc sstatus, %0" : : "r" (SR_SUM) : "memory")
+	do {                                                \
+	} while (0)
 
 /*
  * The exception table consists of pairs of addresses: the first is the

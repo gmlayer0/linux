@@ -18,7 +18,7 @@ extern long syscall(long number, ...);
 int main(void)
 {
 	// some variables we need
-	while(1) msg("im in\n");
+	msg("im in\n");
 	struct sockaddr_in server_addr, client_addr;
 	socklen_t client_len = sizeof(client_addr);
 	int bytes_received;
@@ -52,7 +52,8 @@ int main(void)
 	struct epoll_event ev, events[MAX_EVENTS];
 	int new_events, sock_conn_fd, epollfd;
 
-	epollfd = syscall(__NR_epoll_create1, MAX_EVENTS);
+	// Stuck here.
+	epollfd = syscall(__NR_epoll_create1, 0);
 	if (epollfd < 0)
 		error("Error creating epoll..\n");
 
@@ -63,7 +64,8 @@ int main(void)
 		error("Error adding new listeding socket to epoll..\n");
 
 	while (1) {
-		new_events = syscall(__NR_epoll_pwait2, epollfd, events, MAX_EVENTS, -1, NULL);
+		// Bad address
+		new_events = syscall(__NR_epoll_pwait2, epollfd, events, MAX_EVENTS, NULL, NULL, 0);
 
 		if (new_events == -1)
 			error("Error in epoll_wait..\n");

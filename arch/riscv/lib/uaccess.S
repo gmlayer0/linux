@@ -171,14 +171,14 @@ ENTRY(__asm_copy_from_user)
 
 .Lout_copy_user:
 	/* Disable access to user memory */
-	csrc CSR_STATUS, t6
+	// csrc CSR_STATUS, t6
 	li	a0, 0
 	ret
 
 	/* Exception fixup code */
 10:
 	/* Disable access to user memory */
-	csrc CSR_STATUS, t6
+	// csrc CSR_STATUS, t6
 	sub a0, t5, a0
 	ret
 ENDPROC(__asm_copy_to_user)
@@ -213,7 +213,7 @@ ENTRY(__clear_user)
 
 3:
 	/* Disable access to user memory */
-	csrc CSR_STATUS, t6
+	// csrc CSR_STATUS, t6
 	li a0, 0
 	ret
 4: /* Edge case: unalignment */
@@ -230,7 +230,7 @@ ENTRY(__clear_user)
 	/* Exception fixup code */
 11:
 	/* Disable access to user memory */
-	csrc CSR_STATUS, t6
+	// csrc CSR_STATUS, t6
 	sub a0, a3, a0
 	ret
 ENDPROC(__clear_user)

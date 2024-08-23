@@ -268,12 +268,12 @@ long ukl_syscall(long syscall, long p0, long p1, long p2, long p3, long p4, long
 		// enter_ukl_kernel();
 	}
 	local_irq_restore(flags);
-	printk("Old is %lx, Current is %lx\n", old_tp, (long)tp);
-	printk("syscall%ld: %lx %lx %lx %lx %lx %lx %lx", syscall, p0, p1, p2, p3, p4, p5, p6);
+	// printk("Old is %lx, Current is %lx\n", old_tp, (long)tp);
+	// printk("syscall%ld: %lx %lx %lx %lx %lx %lx %lx", syscall, p0, p1, p2, p3, p4, p5, p6);
 	syscall_ukl_t fn;
 	fn = ukl_sys_call_table[syscall];
 	long ret = fn(p0,p1,p2,p3,p4,p5,p6);
-	printk("syscall%ld ret: %ld", syscall, ret);
+	// printk("syscall%ld ret: %ld", syscall, ret);
 	local_irq_save(flags);
 	{
 		csr_set(CSR_SCRATCH, tp);
